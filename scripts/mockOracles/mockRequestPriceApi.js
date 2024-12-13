@@ -1,6 +1,6 @@
 require("dotenv").config();
 const { loadWallets } = require("../mockScript/loadWallets");
-const deployedAddresses = require("../mockScript/deployedAddresses.json");
+const deployedAddresses = require("../mockScript/localDeployedAddresses.json");
 const { ethers } = require("hardhat");
 const { exec } = require("child_process");
 

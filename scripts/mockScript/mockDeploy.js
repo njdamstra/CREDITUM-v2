@@ -129,7 +129,7 @@ async function main() {
         MockOracle: mockOracleAddr,
     });
 
-    const filePath = path.join(__dirname, "deployedAddresses.json");
+    const filePath = path.join(__dirname, "localDeployedAddresses.json");
     fs.writeFileSync(filePath, JSON.stringify(deployedAddresses, null, 2));
     console.log(`Deployed addresses saved to ${filePath}`);
 
