@@ -475,19 +475,43 @@ npx hardhat test test/oraclePricing.test.js
 
 ---
 
+# UPDATES
+
+**Switched from npm to yarn**
+Added a script shortcut to package.json
+```json
+"scripts": {
+    "deploy:local": "yarn hardhat run scripts/mockScript/mockDeploy.js --network localhost && yarn hardhat run scripts/copyDataToClient.js"
+  },
+```
+
+Start a Local Hardhat Node:
+
+```shell
+yarn hardhat node
+```
+
+Deploy contract to our local hardhat node by running the custom script (or manually):
+
+```shell
+# custom script deploy
+yarn deploy:local
+# or manually deploy
+yarn hardhat run scripts/mockScript/mockDeploy.js --network localhost
+yarn hardhat run scripts/copyDataToClient.js # ensures client gets data
+```
+
+
+
+---
+
 # Collaborators:
 
 ---
 
-**Nathan Damstra:** Implementation leader
+**Nathan Damstra:** Implementation lead
 
-**Felix Krumme:** Liquidity Pool
-
-**Sriman Kundavaram:** Smart Contract Development
-
-**Varun Gudla:** Dynamic Collateral Management
-
-**Jonathan Constantinos:** NFT Valuation Expert
+**Felix Krumme:** Researcher and design lead
 
 
 
