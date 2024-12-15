@@ -8,6 +8,8 @@ import {ICollateralManager} from "./interfaces/ICollateralManager.sol";
 import {IAddresses} from "./interfaces/IAddresses.sol";
 import {IMockOracle} from "./interfaces/IMockOracle.sol";
 
+import "hardhat/console.sol";
+
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
@@ -106,12 +108,15 @@ contract UserPortal is ReentrancyGuard, IERC721Receiver {
     ////////// ** BORROWER FUNCTIONS ** ///////////
 
     function addCollateral(address collection, uint256 tokenId) external nonReentrant {
+        console.log("we are successfully in the UserPortal addCollateral function!");
         refresh();
+        console.log("we passed refresh!");
         IERC721 nft = IERC721(collection);
         // Ensure UserPortal is approved for the NFT
         require(nft.ownerOf(tokenId) == msg.sender, "User is not the owner of this Nft");
+        console.log("we verified that the ownership is correct!");
         require(nft.getApproved(tokenId) == address(this) || nft.isApprovedForAll(msg.sender, address(this)), "UserPortal not approved!");
-
+        console.log("we verified the user approved his NFT!");
         // Transfer the NFT from user to UserPortal
         nft.safeTransferFrom(msg.sender, CMAddr, tokenId);
 

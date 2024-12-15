@@ -6,7 +6,7 @@ const signerData = require("./signers.json");
 
 async function main() {
     // SET BOOLEAN (use mock oracle = true, use API oracle = false);
-    const useOnChainOracle = false;
+    const useOnChainOracle = true;
     // Load named wallets
     const wallets = signerData.reduce((acc, signer) => {
         acc[signer.name] = new ethers.Wallet(signer.privateKey, ethers.provider);
@@ -117,7 +117,6 @@ async function main() {
 
     // Log final contract addresses
     console.log({
-        deployer: deployer.address,
         GoodNft: gNftAddr,
         BadNft: bNftAddr,
         CAddresses: addressesAddr,
@@ -127,6 +126,7 @@ async function main() {
         CLendingPool: poolAddr,
         UserPortal: portalAddr,
         MockOracle: mockOracleAddr,
+        deployer: deployer.address,
     });
 
     const filePath = path.join(__dirname, "localDeployedAddresses.json");

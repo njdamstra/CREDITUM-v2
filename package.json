@@ -11,6 +11,7 @@
   "license": "ISC",
   "description": "",
   "devDependencies": {
+    "@adraffy/ens-normalize": "^1.11.0",
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.8",
     "@nomicfoundation/hardhat-ethers": "^3.0.8",
     "@nomicfoundation/hardhat-foundry": "^1.0.2-dev.0",

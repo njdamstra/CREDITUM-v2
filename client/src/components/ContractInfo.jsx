@@ -3,14 +3,19 @@ import { getContractBalanceInETH } from "../utils/contractServices";
 import { getLenderSupplied } from "../utils/contractServices";
 import { getBorrowerData } from "../utils/contractServices";
 
-function RefreshData({ setBalance, setSupplied }) {
+function RefreshData({ setBalance, setSupplied, setTotalDebt, setNetDebt, setCollateralValue, setHealthFactor }) {
     const handleRefresh = async () => {
       const balanceInETH = await getContractBalanceInETH();
       const suppliedInETH = await getLenderSupplied();
+      const [totalDebt, netDebt, cv, hf] = await getBorrowerData();
       console.log("Pool Balance:", balanceInETH, "ETH");
       console.log("You Supplied:", suppliedInETH, "ETH");
       setBalance(balanceInETH);
       setSupplied(suppliedInETH);
+      setTotalDebt(totalDebt);
+      setNetDebt(netDebt);
+      setCollateralValue(cv);
+      setHealthFactor(hf);
     };
   
     return <button onClick={handleRefresh}>Refresh Data</button>;
@@ -60,7 +65,7 @@ function ContractInfo({ account }) {
       <h2>Net Debt you owe: {yourNetDebt} ETH</h2>
       <h2>Your Total Collaterals Value: {yourCollateralValue} ETH</h2>
       <h2>Your loans Health Factor: {yourHealthFactor} ETH</h2>
-      <RefreshData setBalance={setBalance} setSupplied={setSupplied} />
+      <RefreshData setBalance={setBalance} setSupplied={setSupplied} setTotalDebt={setTotalDebt} setNetDebt={setNetDebt} setCollateralValue={setCollateralValue} setHealthFactor={setHealthFactor} />
     </div>
   );
 }

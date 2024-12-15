@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "ethers": "^6.13.4",
+    "react-router-dom": "^7.0.2",
     "react-toastify": "^10.0.6"
   }
 }

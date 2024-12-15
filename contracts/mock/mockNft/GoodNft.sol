@@ -13,4 +13,9 @@ contract GoodNFT is ERC721 {
         _safeMint(to, currentTokenId);
         currentTokenId++;
     }
+
+    // function ownerOf(uint256 tokenId) public view virtual override returns (address) {
+    //     return _owners[tokenId];
+    // }
+
 }

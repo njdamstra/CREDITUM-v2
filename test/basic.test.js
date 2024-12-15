@@ -121,7 +121,6 @@ describe("UserPortal", function () {
         
         bNftFP = parseEther("15"); // 15 ETH floor price
         console.log("Setting price for BadNft token 0 to ...", bNftFP.toString());
-        const BNft_safe = true; // Collection is safe for borrowing
         await mockOracle.connect(deployer).manualUpdateNftPrice(bNftAddr, 0, bNftFP);
 
     

@@ -69,24 +69,38 @@ export const supplyFund = async (supplyAmount) => {
   const ethValue = parseEther(supplyAmount);
   const supply = await contract.supply(ethValue, { value: ethValue });
   await supply.wait();
-  console.log("Lender supplied to pool successfully!");
+  console.log("CS: Lender supplied to pool successfully!");
 };
 
 export const withdrawFund = async (withdrawAmount) => {
     const ethValue = parseEther(withdrawAmount);
     const withdrawTx = await contract.withdraw(ethValue);
     await withdrawTx.wait();
-    console.log("Lender withdrawed successfully!");
+    console.log("CS: Lender withdrawed successfully!");
   };
 
 export const addCollateral = async (collectionAddress, tokenId) => {
     const addCollateralTx = await contract.addCollateral(collectionAddress, tokenId);
     await addCollateralTx.wait();
-    console.log("collateral added successfully!");
+    console.log("CS: collateral added successfully!");
 };
 
 export const borrowFund = async (borrowAmount) => {
-    const borrowTx = await contract.borrow(borrowAmount);
+    const ethValue = parseEther(borrowAmount);
+    const borrowTx = await contract.borrow(ethValue);
     await borrowTx.wait();
-    console.log("borrowed funds successfully!");
+    console.log("CS: borrowed funds successfully!");
 };
+
+export const repayDebt = async (repayAmount) => {
+    const ethValue = parseEther(repayAmount);
+    const repayTx = await contract.repay(ethValue, { value: ethValue });
+    await repayTx.wait();
+    console.log("CS: repayed debts successfully!");
+}
+
+export const redeemCollateral = async (collectionAddress, tokenId) => {
+    const redeemTx = await contract.redeemCollateral(collectionAddress, tokenId);
+    await redeemTx.wait();
+    console.log("CS: redeemed collateral successfully!");
+}

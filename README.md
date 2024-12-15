@@ -1,6 +1,108 @@
 # **CREDITUM**
 ## - **Dynamic NFT Collateralization Protocol**
 
+---
+
+# UPDATES
+
+## Yarn Dependency Manager [IMPORTANT!!!]
+**Switched from npm to yarn**
+Added a script shortcut to package.json
+```json
+"scripts": {
+    "deploy:local": "yarn hardhat run scripts/mockScript/mockDeploy.js --network localhost && yarn hardhat run scripts/copyDataToClient.js"
+  },
+```
+
+Start a Local Hardhat Node:
+
+```shell
+yarn hardhat node
+```
+
+Deploy contract to our local hardhat node by running the custom script (or manually):
+
+```shell
+# custom script deploy
+yarn deploy:local
+# or manually deploy
+yarn hardhat run scripts/mockScript/mockDeploy.js --network localhost
+yarn hardhat run scripts/copyDataToClient.js # ensures client gets data
+```
+
+Set Borrower1 up with some NFTs:
+
+```shell
+yarn hardhat run scripts/mockScript/borrower1gNft.js --network localhost
+```
+
+---
+
+## **UI Website**
+
+I created a website which i've only tested locally via hardhat
+
+**Start the Website**
+
+1. From main project directory, run these commands:
+
+```shell
+yarn hardhat node
+# Go to a new terminal while keeping this one open
+yarn deploy:local
+
+# Optional if you want borrower1 to have NFTs minted to his address
+yarn hardhat run scripts/mockScript/borrower1gNft.js --network localhost
+```
+
+2. Go into client directory and start the server:
+
+```shell
+cd client
+
+# this should start the server in your web brower (localhost:3000)
+yarn start
+```
+
+### Interacting with the website:
+
+**Setup Hardhats public accounts with MetaMask to connect their wallets with the website:**
+
+  - Install metamask web extension and create an account
+  - Go to scripts/mockScript/signers.json
+  - copy "lender1" private key onto your clipboard (without the strings "")
+  - click on metamask extension at top right of your browser
+  - click the drop down menu at top where it says your account name
+  - click "Add account or hardware wallet"
+  - click "import account"
+  - paste lender1's private key
+  - at the bottom of the extension drop down, it'll say "Account isn't connected to localhost:3000", click "Connect account"
+  - click on the top left dropdown, it should say "Select a network"
+  - At the bottom of this drop down, click "+ Add a custom network"
+  - Input the following for your custom network:
+    - Network name: Localhost 8545
+    - Default RPC URL: 127.0.0.1:8545
+    - Chain ID: 1337
+    - Currency symbol: ETH
+    - leave all other fields blank
+    - click "Save"
+  - Reclick on select a network dropdown and select the new custom network named "Localhost 8545"
+  - Click on the 3 vertical dots at the top right dropdown
+  - click "Account details"
+  - Above the QR code, click the edit symbol and change the name to: "HHLH Lender1 Acc" (HHLH: hardHat Local Host) (optional, just nice to keep track)
+  - Repeat for borrower1 and any more accounts you'd like to use
+    - This time, no need to add a custom network, just make sure their selected network is Localhost 8545!
+
+**Now Interact!**
+
+Once you've connected your local hardhat accounts to metamask and connected them with the website, the Connect Wallet Button should dissappear and you should be on the landing-page. Verify Connect Account: _____ is the hardhat account in your metamask. Easily switch between which account you're using by clicking the metamask extension and select the other account. refresh your browser!
+
+Only works for borrowers and lenders so far.
+
+localhost:3000/landing-page
+localhost:3000/lender
+localhost:3000/borrower
+localhost:3000/liquidator
 
 ---
 
@@ -473,33 +575,9 @@ npx hardhat test test/oraclePricing.test.js
 
 
 
----
 
-# UPDATES
 
-**Switched from npm to yarn**
-Added a script shortcut to package.json
-```json
-"scripts": {
-    "deploy:local": "yarn hardhat run scripts/mockScript/mockDeploy.js --network localhost && yarn hardhat run scripts/copyDataToClient.js"
-  },
-```
 
-Start a Local Hardhat Node:
-
-```shell
-yarn hardhat node
-```
-
-Deploy contract to our local hardhat node by running the custom script (or manually):
-
-```shell
-# custom script deploy
-yarn deploy:local
-# or manually deploy
-yarn hardhat run scripts/mockScript/mockDeploy.js --network localhost
-yarn hardhat run scripts/copyDataToClient.js # ensures client gets data
-```
 
 
 
