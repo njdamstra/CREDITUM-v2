@@ -8,12 +8,18 @@ function LenderActions() {
     const [withdrawAmount, setWithdrawAmount] = useState("");
 
     const handleSupply = async () => {
+        if (!supplyAmount || parseFloat(supplyAmount) <= 0) {
+            toast.error("Enter a valid amount to supply!");
+            return;
+        }
         try {
             await supplyFund(supplyAmount);
+            toast.success("Successfully supplied funds!");
+            setSupplyAmount(""); // Clear input after successful supply
         } catch (error) {
-            toast.error(error?.reason);
+            console.error("Supply error:", error);
+            toast.error(error?.reason || "Transaction failed!");
         }
-        setSupplyAmount("");
     };
 
     const handleWithdraw = async () => {

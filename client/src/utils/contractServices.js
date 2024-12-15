@@ -66,13 +66,28 @@ export const getLenderSupplied = async () => {
 
 // Function to supply funds to the contract
 export const supplyFund = async (supplyAmount) => {
-  const ethValue = parseEther(supplyAmount);
-  const supply = await contract.supply(ethValue, { value: ethValue });
-  await supply.wait();
-  console.log("CS: Lender supplied to pool successfully!");
+
+    if (!provider || !signer) {
+        console.error("Provider or signer is not initialized!");
+        return;
+    }
+    
+    const ethValue = parseEther(supplyAmount);
+
+    // const address = await signer.getAddress();
+
+    // Fetch the current nonce from the blockchain
+    // const nonce = await provider.getTransactionCount(address, "latest");
+    const supply = await contract.supply(ethValue, { value: ethValue });
+    await supply.wait();
+    console.log("CS: Lender supplied to pool successfully!");
 };
 
 export const withdrawFund = async (withdrawAmount) => {
+    if (!provider || !signer) {
+        console.error("Provider or signer is not initialized!");
+        return;
+    }
     const ethValue = parseEther(withdrawAmount);
     const withdrawTx = await contract.withdraw(ethValue);
     await withdrawTx.wait();
@@ -80,12 +95,20 @@ export const withdrawFund = async (withdrawAmount) => {
   };
 
 export const addCollateral = async (collectionAddress, tokenId) => {
+    if (!provider || !signer) {
+        console.error("Provider or signer is not initialized!");
+        return;
+    }
     const addCollateralTx = await contract.addCollateral(collectionAddress, tokenId);
     await addCollateralTx.wait();
     console.log("CS: collateral added successfully!");
 };
 
 export const borrowFund = async (borrowAmount) => {
+    if (!provider || !signer) {
+        console.error("Provider or signer is not initialized!");
+        return;
+    }
     const ethValue = parseEther(borrowAmount);
     const borrowTx = await contract.borrow(ethValue);
     await borrowTx.wait();
@@ -93,6 +116,14 @@ export const borrowFund = async (borrowAmount) => {
 };
 
 export const repayDebt = async (repayAmount) => {
+    if (!provider || !signer) {
+        console.error("Provider or signer is not initialized!");
+        return;
+    }
+    // const address = await signer.getAddress();
+
+    // Fetch the current nonce from the blockchain
+    // const nonce = await provider.getTransactionCount(address, "latest");
     const ethValue = parseEther(repayAmount);
     const repayTx = await contract.repay(ethValue, { value: ethValue });
     await repayTx.wait();
@@ -100,7 +131,41 @@ export const repayDebt = async (repayAmount) => {
 }
 
 export const redeemCollateral = async (collectionAddress, tokenId) => {
+    if (!provider || !signer) {
+        console.error("Provider or signer is not initialized!");
+        return;
+    }
     const redeemTx = await contract.redeemCollateral(collectionAddress, tokenId);
     await redeemTx.wait();
     console.log("CS: redeemed collateral successfully!");
+}
+
+export const placeBid = async (collectionAddress, tokenId, bidAmount) => {
+    if (!provider || !signer) {
+        console.error("Provider or signer is not initialized!");
+        return;
+    }
+    // const address = await signer.getAddress();
+
+    // Fetch the current nonce from the blockchain
+    // const nonce = await provider.getTransactionCount(address, "latest");
+    const ethValue = parseEther(bidAmount);
+    const bidTx = await contract.placeBid(collectionAddress, tokenId, ethValue, { value: ethValue });
+    await bidTx.wait();
+    console.log("CS: placed bid successfully!");
+}
+
+export const purchaseNft = async (collectionAddress, tokenId, amount) => {
+    if (!provider || !signer) {
+        console.error("Provider or signer is not initialized!");
+        return;
+    }
+    // const address = await signer.getAddress();
+
+    // Fetch the current nonce from the blockchain
+    // const nonce = await provider.getTransactionCount(address, "latest");
+    const ethValue = parseEther(amount);
+    const purchaseTx = await contract.purchase(collectionAddress, tokenId, ethValue, { value: ethValue });
+    await purchaseTx.wait();
+    console.log("CS: purchased NFT successfully!");
 }

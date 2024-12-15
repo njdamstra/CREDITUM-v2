@@ -182,17 +182,19 @@ contract UserPortal is ReentrancyGuard, IERC721Receiver {
 
     ///////////// ** LIQUIDATORS FUNCTIONS ** ////////////////
 
-    function placeBid(address collection, uint256 tokenId) external payable nonReentrant {
+    function placeBid(address collection, uint256 tokenId, uint256 amount) external payable nonReentrant {
         refresh();
         require(msg.value > 0, "Bid amount must be greater than 0");
+        require(msg.value >= amount, "[*ERROR*] Incorrect amount sent");
 
         // Forward the ETH and call placeBid on NftTrader
         iTrader.placeBid{value: msg.value}(msg.sender, collection, tokenId);
     }
 
-    function purchase(address collection, uint256 tokenId) external payable {
+    function purchase(address collection, uint256 tokenId, uint256 amount) external payable {
         refresh();
         require(msg.value > 0, "Purchase amount must be greater than 0");
+        require(msg.value >= amount, "[*ERROR*] Incorrect amount sent");
 
         // Forward the ETH and call purchase on NftTrader
         iTrader.purchase{value: msg.value}(msg.sender, collection, tokenId);
