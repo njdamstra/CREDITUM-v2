@@ -453,7 +453,7 @@ describe("UserPortal", function () {
             const basePrice = parseEther((6*95/100).toString());
 
             await expect(
-                portal.connect(liquidator).purchase(gNftAddr, 0, { value: basePrice })
+                portal.connect(liquidator).purchase(gNftAddr, 0, basePrice, { value: basePrice })
             ).to.emit(nftTrader, "NFTPurchased").withArgs(
                 gNftAddr, 0, basePrice, liquidatorAddr, anyValue
             ).to.emit(lendingPool, "Liquidated").withArgs(
@@ -472,7 +472,7 @@ describe("UserPortal", function () {
             
             const bid1 = parseEther("6");
             await expect(
-                portal.connect(liquidator).placeBid(gNftAddr, 0, { value: bid1 })
+                portal.connect(liquidator).placeBid(gNftAddr, 0, bid1, { value: bid1 })
             ).to.emit(nftTrader, "NewBid").withArgs(liquidatorAddr, gNftAddr, 0, bid1)
             
             console.log("increasing time by 20002 seconds")
@@ -504,23 +504,23 @@ describe("UserPortal", function () {
 
             console.log("tries to place 5 Eth bid on NFT who's base price is 5.75 Eth");
             await expect(
-                portal.connect(lender1).placeBid(gNftAddr, 0, { value: bid1 })
+                portal.connect(lender1).placeBid(gNftAddr, 0, bid1, { value: bid1 })
             ).to.be.revertedWith("Bid not high enough");
             
             const lenderBalanceBefore = await ethers.provider.getBalance(lender1Addr);
             await expect(
-                portal.connect(lender1).placeBid(gNftAddr, 0, { value: bid2 })
+                portal.connect(lender1).placeBid(gNftAddr, 0, bid2, { value: bid2 })
             ).to.emit(nftTrader, "NewBid").withArgs(lender1Addr, gNftAddr, 0, bid2);
             const lenderBalanceAfterBid = await ethers.provider.getBalance(lender1Addr);
 
             console.log("tries to place a bid with same amount as previous highest bid");
             await expect(
-                portal.connect(liquidator).placeBid(gNftAddr, 0, { value: bid2 })
+                portal.connect(liquidator).placeBid(gNftAddr, 0, bid2, { value: bid2 })
             ).to.be.revertedWith("Bid not high enough");
             
             console.log("Liquidator placed highest bid of 7 ETH");
             await expect(
-                portal.connect(liquidator).placeBid(gNftAddr, 0, { value: bid3 })
+                portal.connect(liquidator).placeBid(gNftAddr, 0, bid3, { value: bid3 })
             ).to.emit(nftTrader, "NewBid").withArgs(liquidatorAddr, gNftAddr, 0, bid3);
             const lenderBalanceLost = await ethers.provider.getBalance(lender1Addr);
 
@@ -686,16 +686,18 @@ describe("UserPortal", function () {
             const totalSupplied1 = await lendingPool.connect(lender1).totalSuppliedUsers(lender1Addr);
             expect(totalSupplied1).to.equal(parseEther("6"));
 
+            // await mockOracle.connect(deployer).manualUpdateNftPrice(bNftAddr, 0, parseEther("20"));
 
-            // borrower1 redeems his BadNft
+
+            // borrower1 redeems his GoodNft
             const tx8 = await portal.connect(borrower1).redeemCollateral(gNftAddr, 0);
             await expect(tx8).to.emit(collateralManager, "CollateralRedeemed").withArgs(
                 borrower1Addr, gNftAddr, 0);
             
-            // borrower1 tries to redeem his GoodNft but fails
+            // borrower1 tries to redeem his BadNft but fails
             await expect(
                 portal.connect(borrower1).redeemCollateral(bNftAddr, 0)
-            ).to.be.revertedWith("[*ERROR*] Health Factor would fall below 1.2 after redemption!");
+            ).to.be.revertedWith("[*ERROR*] Health Factor would fall below 1.1 after redemption!");
         })
     })
 

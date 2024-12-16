@@ -91,4 +91,11 @@ interface ICollateralManager {
 
     function updateAllLiquidatableCollateral() external;
 
+    function getParsedNftList(address borrower) external view returns (
+        address[] memory collectionAddresses,
+        uint256[] memory tokenIds,
+        uint256[] memory values,
+        bool[] memory beingLiquidatedList
+    );
+
 }

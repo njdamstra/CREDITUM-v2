@@ -7,6 +7,30 @@
 
 ## Yarn Dependency Manager [IMPORTANT!!!]
 **Switched from npm to yarn**
+
+**Yarn terminal commands:**
+```shell
+yarn install ## npm install
+yarn add --dev package ## npm install package
+yarn remove package ## npm uninstall package
+yarn upgrade package ## npm update package
+yarn list --pattern package ## npm list package
+yarn package --version
+
+rm -rf node_modules yarn.lock
+yarn install
+
+
+yarn hardhat node
+
+yarn hardhat compile
+yarn hardhat console --network localhost
+yarn hardhat run scripts/mockScript/mockDeploy.js --network localhost
+
+```
+
+
+
 Added a script shortcut to package.json
 ```json
 "scripts": {

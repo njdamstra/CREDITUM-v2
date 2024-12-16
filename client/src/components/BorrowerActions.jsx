@@ -1,14 +1,16 @@
 import React, { useState } from "react";
 import { addCollateral, borrowFund, repayDebt, redeemCollateral } from "../utils/contractServices";
 import { toast } from "react-toastify";
+import BorrowerProfile from "./BorrowerProfile";
 
-function BorrowerActions() {
+function BorrowerActions({ refreshData }) {
   const [collectionAddress, setCollectionAddress] = useState("");
   const [tokenId, setTokenId] = useState("");
   const [borrowAmount, setBorrowAmount] = useState("");
   const [repayAmount, setRepayAmount] = useState("");
   const [redeemTokenId, setRedeemTokenId] = useState("");
   const [redeemCollectionAddress, setRedeemCollectionAddress] = useState("");
+  const [showProfile, setShowProfile] = useState(false);
 
   // Add Collateral Handler
   const handleAddCollateral = async () => {
@@ -21,6 +23,7 @@ function BorrowerActions() {
       toast.success("Collateral added successfully!");
       setCollectionAddress("");
       setTokenId("");
+      await refreshData();
     } catch (error) {
       toast.error(error?.reason || "Failed to add collateral!");
     }
@@ -36,6 +39,7 @@ function BorrowerActions() {
       await borrowFund(borrowAmount);
       toast.success("Borrowed funds successfully!");
       setBorrowAmount("");
+      await refreshData();
     } catch (error) {
       toast.error(error?.reason || "Failed to borrow funds!");
     }
@@ -51,6 +55,7 @@ function BorrowerActions() {
       await repayDebt(repayAmount);
       toast.success("Repayed debt successfully!");
       setRepayAmount("");
+      await refreshData();
     } catch (error) {
       toast.error(error?.reason || "Failed to repay debt!");
     }
@@ -67,10 +72,15 @@ function BorrowerActions() {
       toast.success("Redeemed collateral successfully!");
       setRedeemCollectionAddress("");
       setRedeemTokenId("");
+      await refreshData();
     } catch (error) {
       toast.error(error?.reason || "Failed to redeem collateral!");
     }
   };
+
+  // Toggle profile visibility
+  const toggleProfile = () => setShowProfile((prevState) => !prevState);
+
 
   return (
     <div>
@@ -138,7 +148,13 @@ function BorrowerActions() {
         />
         <button onClick={handleRedeemCollateral}>Redeem Collateral</button>
       </div>
-    </div>
+      <br />
+
+      <button onClick={toggleProfile}>
+        {showProfile ? "Hide Collateral Profile" : "View My Collateral Profile"}
+      </button>
+      {showProfile && <BorrowerProfile />}
+      </div>
   );
 }
 

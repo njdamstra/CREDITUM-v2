@@ -178,7 +178,7 @@ contract CollateralManager is IERC721Receiver {
     function redeemCollateral(address borrower, address collectionAddress, uint256 tokenId) public onlyPortal {
         uint256 healthFactor = getHealthFactor(borrower);
         // require(isNftValid(borrower, collectionAddress,tokenId), "[*ERROR* Nft not valid]");
-        require(healthFactor > 110,"[*ERROR*] Health Factor has to be above 1.5 to redeem collateral!");
+        require(healthFactor > 110,"[*ERROR*] Health Factor has to be above 1.1 to redeem collateral!");
 
         // get a new List without the redeemed Nft
         // Nft[] memory nftListCopy = getNftList(borrower);
@@ -300,6 +300,29 @@ contract CollateralManager is IERC721Receiver {
 
     function getBeingLiquidated(address borrower) public view returns (bool) {
         return borrowersCollateral[borrower].isLiquidatable;
+    }
+
+    function getParsedNftList(address borrower) public view returns (
+        address[] memory collectionAddresses,
+        uint256[] memory tokenIds,
+        uint256[] memory values,
+        bool[] memory beingLiquidatedList
+    ) {
+        // CollateralProfile memory profile = borrowersCollateral[borrower];
+        Nft[] memory nftList = getNftList(borrower);
+        uint256 nftCount = nftList.length;
+        collectionAddresses = new address[](nftCount);
+        tokenIds = new uint256[](nftCount);
+        values = new uint256[](nftCount);
+        beingLiquidatedList = new bool[](nftCount);
+        for (uint256 i = 0; i < nftCount; i++) {
+            Nft memory nft = nftList[i];
+            collectionAddresses[i] = nft.collectionAddress;
+            tokenIds[i] = nft.tokenId;
+            beingLiquidatedList[i] = nft.isBeingLiquidated;
+            values[i] = getNftValue(nft.collectionAddress, nft.tokenId);
+        }
+        return (collectionAddresses, tokenIds, values, beingLiquidatedList);
     }
 
     ///////// ***** NEW NFT LIQUIDATION MECHANISM ******** ///////////

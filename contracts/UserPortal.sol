@@ -164,6 +164,16 @@ contract UserPortal is ReentrancyGuard, IERC721Receiver {
         }
     }
 
+    function getCollateralProfile(address borrower) public view returns (
+        address[] memory collectionAddresses,
+        uint256[] memory tokenIds,
+        uint256[] memory values,
+        bool[] memory beingLiquidatedList
+    ) {
+        (collectionAddresses, tokenIds, values, beingLiquidatedList) = iCollateralManager.getParsedNftList(borrower);
+        return (collectionAddresses, tokenIds, values, beingLiquidatedList);
+    }
+
 
     function getBorrowerAccountData() public view returns (
         uint256 totalDebt,

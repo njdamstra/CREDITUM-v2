@@ -3,7 +3,7 @@ import { supplyFund } from "../utils/contractServices";
 import { withdrawFund } from "../utils/contractServices";
 import { toast } from "react-toastify";
 
-function LenderActions() {
+function LenderActions({ refreshData }) {
     const [supplyAmount, setSupplyAmount] = useState("");
     const [withdrawAmount, setWithdrawAmount] = useState("");
 
@@ -16,6 +16,7 @@ function LenderActions() {
             await supplyFund(supplyAmount);
             toast.success("Successfully supplied funds!");
             setSupplyAmount(""); // Clear input after successful supply
+            await refreshData();
         } catch (error) {
             console.error("Supply error:", error);
             toast.error(error?.reason || "Transaction failed!");
@@ -30,6 +31,7 @@ function LenderActions() {
         try {
             await withdrawFund(withdrawAmount);
             setWithdrawAmount(""); // Clear input after successful withdrawal
+            await refreshData();
         } catch (error) {
             toast.error(error?.reason || "Failed to withdraw funds!");
         }
@@ -37,7 +39,7 @@ function LenderActions() {
 
     return (
         <div>
-        <h2>Contract Actions</h2>
+        <h2>Lender Actions</h2>
         <div>
             <input
             type="text"

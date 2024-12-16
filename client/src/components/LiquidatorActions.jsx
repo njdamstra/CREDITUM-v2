@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { placeBid, purchaseNft } from "../utils/contractServices";
 import { toast } from "react-toastify";
 
-function LiquidatorActions() {
+function LiquidatorActions({ refreshData }) {
   const [collectionAddress, setCollectionAddress] = useState("");
   const [tokenId, setTokenId] = useState("");
   const [bidAmount, setBidAmount] = useState("");
@@ -20,6 +20,7 @@ function LiquidatorActions() {
       setCollectionAddress("");
       setTokenId("");
       setBidAmount("");
+      await refreshData();
     } catch (error) {
       toast.error(error?.reason || "Failed to place bid!");
     }
@@ -37,6 +38,7 @@ function LiquidatorActions() {
       setCollectionAddress("");
       setTokenId("");
       setPurchaseAmount("");
+      await refreshData();
     } catch (error) {
       toast.error(error?.reason || "Failed to purchase NFT!");
     }
