@@ -1,4 +1,4 @@
-import { parseEther, formatEther } from "ethers";
+import { parseEther, formatEther, ConstructorFragment } from "ethers";
 import { getContractInstance, getProvider } from "./contractInstances";
 
 const deployedAddresses = require("./deployedAddresses.json");
@@ -61,6 +61,32 @@ export const getBorrowersCollateral = async (borrowerAddress) => {
         return [0, 0, 0, 0];
     };
 }
+
+export const getListedNfts = async () => {
+  try {
+    const contract = getContractInstance();
+
+    const [collectionAddresses, tokenIds] = await contract.getListings();
+    const basePrice = [];
+    const auctionStarted = [];
+    const auctionEnds = [];
+    const highestBid = [];
+    const buyNow = [];
+    for (let i = 0; i < collectionAddresses.length; i++) {
+      [basePrice[i], auctionStarted[i], auctionEnds[i], highestBid[i], buyNow[i]] = await contract.getListingData(collectionAddresses[i], tokenIds[i]);
+    }
+    return [collectionAddresses, tokenIds, basePrice, highestBid, auctionStarted, auctionEnds, buyNow];
+  } catch (error) {
+    console.error("error fetching nft listings");
+    return [0, 0, 0, 0, 0, 0, 0];
+  };
+};
+
+// export const getListingData = async (collectionAddress, tokenId) => {
+//   try {
+//     const contract = getContractInstance();
+//   }
+// }
 
 export const refresh = async () => {
     const contract = getContractInstance();

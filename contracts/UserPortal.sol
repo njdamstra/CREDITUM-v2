@@ -88,12 +88,14 @@ contract UserPortal is ReentrancyGuard, IERC721Receiver {
         require(amount > 0, "[*ERROR*] amount: Cannot send 0 WEI");
         // Forward ETH to LendingPool and call `supply`
         iPool.supply{ value: amount }(msg.sender, amount);
+        refresh();
     }
 
 
     function withdraw(uint256 amount) external nonReentrant {
         refresh();
         iPool.withdraw(msg.sender, amount);
+        refresh();
     }
 
     function getLenderAccountData() public view returns (
@@ -122,23 +124,27 @@ contract UserPortal is ReentrancyGuard, IERC721Receiver {
 
         // Call addCollateral on CollateralManager
         iCollateralManager.addCollateral(msg.sender, collection, tokenId);
+        refresh();
     }
     
     function borrow(uint256 amount) external nonReentrant {
         refresh();
         iPool.borrow(msg.sender, amount);
+        refresh();
     }
 
     function repay(uint256 amount) external payable {
         refresh();
         require(msg.value == amount, "Incorrect ETH amount sent!");
         iPool.repay{value: amount}(msg.sender, amount);
+        refresh();
     }
 
     function redeemCollateral(address collection, uint256 tokenId) external nonReentrant {
         // Call redeemCollateral on CollateralManager
         refresh();
         iCollateralManager.redeemCollateral(msg.sender, collection, tokenId);
+        refresh();
 
         // Transfer NFT back to the user
         // IERC721(collection).safeTransferFrom(address(this), msg.sender, tokenId);
@@ -199,6 +205,7 @@ contract UserPortal is ReentrancyGuard, IERC721Receiver {
 
         // Forward the ETH and call placeBid on NftTrader
         iTrader.placeBid{value: msg.value}(msg.sender, collection, tokenId);
+        refresh();
     }
 
     function purchase(address collection, uint256 tokenId, uint256 amount) external payable {
@@ -208,6 +215,7 @@ contract UserPortal is ReentrancyGuard, IERC721Receiver {
 
         // Forward the ETH and call purchase on NftTrader
         iTrader.purchase{value: msg.value}(msg.sender, collection, tokenId);
+        refresh();
     }
 
     function getListings() public view returns (

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { placeBid, purchaseNft } from "../utils/contractServices";
 import { toast } from "react-toastify";
+import MarketPlace from "./MarketPlace";
 
 function LiquidatorActions({ refreshData }) {
   const [collectionAddress, setCollectionAddress] = useState("");
@@ -95,6 +96,12 @@ function LiquidatorActions({ refreshData }) {
           placeholder="Purchase Amount in ETH"
         />
         <button onClick={handlePurchase}>Purchase NFT</button>
+      </div>
+      <br />
+
+      <div>
+        <h3>Marketplace Listings</h3>
+        <MarketPlace />
       </div>
     </div>
   );
