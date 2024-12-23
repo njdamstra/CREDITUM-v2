@@ -245,6 +245,10 @@ contract CollateralManager is IERC721Receiver {
         return getListValue(nftList);
     }
 
+    function getBorrowerRiskWeight(address borrower) public view returns (uint256) {
+        return 1000;
+    }
+
     function addTradeListing(address borrower, address collection, uint256 tokenId) private {
         uint256 basePrice = getBasePrice(collection, tokenId);
         // determine basePrice calculation.

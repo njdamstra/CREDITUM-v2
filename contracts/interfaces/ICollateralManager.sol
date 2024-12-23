@@ -97,5 +97,6 @@ interface ICollateralManager {
         uint256[] memory values,
         bool[] memory beingLiquidatedList
     );
+    function getBorrowerRiskWeight(address borrower) external view returns (uint256);
 
 }

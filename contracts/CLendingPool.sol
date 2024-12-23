@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "./CCollateralManager.sol";
 import {ICollateralManager} from "../contracts/interfaces/ICollateralManager.sol";
 import {IAddresses} from "./interfaces/IAddresses.sol";
+import {IDynamicInterestModel} from "./interfaces/IDynamicInterestModel.sol";
 
 
 contract LendingPool is ReentrancyGuard {
@@ -17,11 +18,13 @@ contract LendingPool is ReentrancyGuard {
     mapping(address => bool) public isBorrowerMapping;
     mapping(address => bool) public isLenderMapping;
 
-    mapping(address => uint256) public totalSuppliedUsers; // Tracks ETH (without interest) supplied by lenders
+    mapping(address => uint256) public netSuppliedUsers; // Tracks ETH (without interest) supplied by lenders
+    mapping(address => uint256) public totalSuppliedUsers; // Tracks ETH (with interest) supplied by lenders
     mapping(address => uint256) public totalBorrowedUsers; // Tracks ETH (with interest) currently borrowed by users
     mapping(address => uint256) public netBorrowedUsers; // Tracks ETH (without interest) currently borrowed by borrowers
 
     struct InterestProfile {
+        address borrower;
         uint256 periodicalInterest; // the set interest rate we have them
         uint256 initalTimeStamp; // the start of their initial loan
         uint256 lastUpdated; // last time interest was added to this users loan
@@ -30,7 +33,43 @@ contract LendingPool is ReentrancyGuard {
 
     mapping(address => InterestProfile) public borrowersInterestProfiles;
 
-    uint256 public poolBalance;      // Tracks current ETH in the pool
+    struct BorrowTx {
+        address borrower;
+        uint256 borrowTxId;
+        uint256 totalDebt;
+        uint256 netDebt;
+        InterestProfile interest;
+        uint256 timestamp;
+    }
+    struct BorrowerProfile {
+        address borrower;
+        uint256 totalDebt;
+        uint256 netDebt;
+        BorrowTx[] txs;
+    }
+    mapping(address => BorrowerProfile) public borrowerProfiles;
+
+    struct SupplyTx {
+        address lender;
+        uint256 supplyTxId;
+        uint256 amountSupplied;
+        uint256 amountShared;
+        uint256 timestamp;
+    }
+    struct LenderProfile {
+        address lender;
+        uint256 netSupplied;
+        uint256 totalShare;
+        SupplyTx[] txs;
+    }
+    mapping(address => LenderProfile) public lenderProfiles;
+
+    uint256 public poolBalance; // Tracks current ETH in the pool
+    uint256 public totalBorrowed; // Tracks current ETH borrowed including interest
+    uint256 public netBorrowed; // Tracks current ETH borrowed without interest
+    uint256 public totalSupplied; // Tracks current ETH supplied including interest
+    uint256 public netSupplied; // Tracks current ETH supplied without interest
+    uint256 public totalReserves; // Tracks the total amount of ETH in the reserves of the pool
 
     address public collateralManagerAddr;
     ICollateralManager public iCollateralManager; // Contract managing NFT collateral
@@ -42,6 +81,7 @@ contract LendingPool is ReentrancyGuard {
     address public trader;
     address public addressesAddr;
     IAddresses public addresses;
+    IDynamicInterestModel public iInterest;
 
     constructor(address _addressesAddr) {
         owner = msg.sender;
@@ -57,6 +97,7 @@ contract LendingPool is ReentrancyGuard {
         collateralManagerAddr = addresses.getAddress("CollateralManager");
 
         iCollateralManager = ICollateralManager(collateralManagerAddr);
+        iInterest = IDynamicInterestModel(addresses.getAddress("DynamicInterestModel"));
     }
 
     modifier onlyOwner() {
@@ -203,16 +244,13 @@ contract LendingPool is ReentrancyGuard {
         // console.log("pool.supply: lender:(${lender}), amount: ", amount)
         require(msg.value == amount, "[*ERROR*] supply: Incorrect amount of ETH supplied!");
         require(amount > 0, "[*ERROR*] supply: Cannot supply zero ETH!");
-
-        if (isLender(lender)) {
-            totalSuppliedUsers[lender] += amount;
-        } else {
-            addLenderIfNotExists(lender);
-            totalSuppliedUsers[lender] += amount;
-        }
+        addLenderIfNotExists(lender);
         // Update the pool balance
         poolBalance += amount;
-        //netSuppliedUsers[lender] += amount;
+        netSuppliedUsers[lender] += amount;
+        totalSuppliedUsers[lender] += amount;
+        totalSupplied += amount;
+        netSupplied += amount;
         emit Supplied(lender, amount);
     }
 
@@ -229,6 +267,15 @@ contract LendingPool is ReentrancyGuard {
 
         //update suppliedUsers
         totalSuppliedUsers[lender] -= amount;
+        if (netSuppliedUsers[lender] >= amount) {
+            netSuppliedUsers[lender] -= amount;
+            netSupplied -= amount;
+        } else {
+            netSupplied -= netSuppliedUsers[lender];
+            netSuppliedUsers[lender] = 0;
+        }
+        
+        totalSupplied -= amount;
 
         if (totalSuppliedUsers[lender] == 0) {
             deleteLender(lender);
@@ -245,9 +292,13 @@ contract LendingPool is ReentrancyGuard {
         require(amount <= poolBalance, "[*ERROR*] Insufficient pool liquidity!");
         require(amount > 0, "[*ERROR*] Can not borrow zero ETH!");
         require(iCollateralManager.getHealthFactor(borrower) > 150, "[*ERROR*] Health factor too low to borrow more money!");
-
+        // Check if the pool utilization is below the liquidity ceiling BEFORE the loan
+        require(
+            iInterest.isBelowLiquidityCeiling(totalBorrowed, totalSupplied),
+            "[*ERROR*] Utilization exceeds liquidity ceiling before borrowing!"
+        );
         // calculate interest as 10% of borrowed amount
-        uint256 interestRate = 10;
+        uint256 interestRate = iInterest.calculateBorrowRate(totalBorrowed, totalSupplied);
         uint256 interest = (amount * interestRate) / 100; // 10% interest
         uint256 newLoan = amount + interest;
         uint256 oldTotalDebt = totalBorrowedUsers[borrower];
@@ -260,9 +311,17 @@ contract LendingPool is ReentrancyGuard {
         require(newHealthFactor > 100, "[*ERROR*] New health factor too low to borrow more money!");
 
         poolBalance -= amount;
+        netBorrowed += amount;
+
+        // Check if the new utilization after borrowing is below the ceiling
+        require(
+            iInterest.isBelowLiquidityCeiling(totalBorrowed, totalSupplied),
+            "[*ERROR*] Loan would breach liquidity ceiling!"
+        );
 
         addBorrowerIfNotExists(borrower);
         totalBorrowedUsers[borrower] += newLoan;
+        totalBorrowed += newLoan;
         netBorrowedUsers[borrower] += amount;
 
         InterestProfile storage iProfile = borrowersInterestProfiles[borrower];
@@ -308,6 +367,8 @@ contract LendingPool is ReentrancyGuard {
             // Clear the net debt and reduce total debt by the amount
             netBorrowedUsers[borrower] = 0;
             totalBorrowedUsers[borrower] -= amount;
+            totalBorrowed -= amount;
+            netBorrowed -= netDebt;
 
             // Allocate the interest if any
             if (interest > 0) {
@@ -322,6 +383,8 @@ contract LendingPool is ReentrancyGuard {
             // If the repayment is less than netDebt, only reduce netDebt
             netBorrowedUsers[borrower] -= amount;
             totalBorrowedUsers[borrower] -= amount;
+            netBorrowed -= amount;
+            totalBorrowed -= amount;
         }
 
         poolBalance += amount;
@@ -395,20 +458,20 @@ contract LendingPool is ReentrancyGuard {
         return (periodicalInterest, initalTimeStamp, lastUpdated, periodDuration);
     }
 
-    function allocateInterest(uint256 amount) private {
-        uint256 totalSupplied = getTotalSupplied();
+    function allocateInterest(uint256 totalInterest) private {
+        uint256 distributedInterest = iInterest.applyReserveFactor(totalInterest);
         for (uint256 i = 0; i < lenders.length; i++) {
             address lender = lenders[i];
             uint256 lenderBalance = totalSuppliedUsers[lender];
-
-            if (totalSupplied > 0) {
-                uint256 lenderShare = (lenderBalance * amount) / totalSupplied;
-                totalSuppliedUsers[lender] += lenderShare; // Update mapping with new balance
-            }
+            uint256 lenderShare = (lenderBalance * distributedInterest) / totalSupplied;
+            totalSuppliedUsers[lender] += lenderShare; // Update mapping with new balance
         }
+        totalSupplied += totalInterest;
+        totalReserves += totalInterest - distributedInterest;
     }
 
     function updateBorrowersInterest() public {
+        uint256 interestRate = iInterest.calculateBorrowRate(totalBorrowed, totalSupplied);
         for (uint256 i = 0; i < borrowers.length; i++) {
             address borrower = borrowers[i];
             InterestProfile storage iProfile = borrowersInterestProfiles[borrower];
@@ -421,17 +484,46 @@ contract LendingPool is ReentrancyGuard {
                 uint256 interest = (borrowedAmount * iProfile.periodicalInterest) / 100;
                 // Update the borrowed amount by adding the calculated interest
                 totalBorrowedUsers[borrower] += interest;
+                totalBorrowed += interest;
                 iProfile.lastUpdated = timeNow;
             }
         }
     }
 
-    function getTotalSupplied() private view returns (uint256) {
-        uint256 total = 0;
-        for (uint256 i = 0; i < lenders.length; i++) {
-            total += totalSuppliedUsers[lenders[i]];
+
+    // @Helper when borrower repays all funds from a particulare borrow tx
+    function _deleteTxFromBorrowerProfile(
+        address borrower,
+        uint256 borrowTxId;
+    ) internal {
+        BorrowerProfile storage profile = borrowerProfiles[borrower];
+        uint256 length = profile.txs.length;
+        for (uint256 i = 0; i < length; i++) {
+            BorrowTx storage bTx = profile.txs[i];
+            if (bTx.borrowTxId == borrowTxId) {
+                // Swap the last element with the current element
+                profile.txs[i] = profile.txs[length - 1];
+                profile.txs.pop(); // Remove the last element
+                break;
+            }
         }
-        return total;
+    }
+    // @Helper when lender withdraws all funds from a particular supply tx
+    function _deleteTxFromLenderProfile(
+        address lender,
+        uint256 supplyTxId;
+    ) internal {
+        LenderProfile storage profile = lenderProfiles[lender];
+        uint256 length = profile.txs.length;
+        for (uint256 i = 0; i < length; i++) {
+            SupplyTx storage sTx = profile.txs[i];
+            if (sTx.supplyTxId == supplyTxId) {
+                // Swap the last element with the current element
+                profile.txs[i] = profile.txs[length - 1];
+                profile.txs.pop(); // Remove the last element
+                break;
+            }
+        }
     }
 
     function getTotalBorrowedUsers(address borrower) public view returns (uint256) {
