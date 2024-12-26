@@ -494,7 +494,7 @@ contract LendingPool is ReentrancyGuard {
     // @Helper when borrower repays all funds from a particulare borrow tx
     function _deleteTxFromBorrowerProfile(
         address borrower,
-        uint256 borrowTxId;
+        uint256 borrowTxId
     ) internal {
         BorrowerProfile storage profile = borrowerProfiles[borrower];
         uint256 length = profile.txs.length;
@@ -511,7 +511,7 @@ contract LendingPool is ReentrancyGuard {
     // @Helper when lender withdraws all funds from a particular supply tx
     function _deleteTxFromLenderProfile(
         address lender,
-        uint256 supplyTxId;
+        uint256 supplyTxId
     ) internal {
         LenderProfile storage profile = lenderProfiles[lender];
         uint256 length = profile.txs.length;

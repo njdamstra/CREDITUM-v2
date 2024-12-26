@@ -8,5 +8,5 @@ interface IDynamicInterestModel {
         view
         returns (bool);
 
-    function applyReserveFactor(uint256 rawRate) public view returns (uint256);
+    function applyReserveFactor(uint256 rawRate) external view returns (uint256);
 }

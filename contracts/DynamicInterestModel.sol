@@ -2,8 +2,8 @@
 pragma solidity ^0.8.0;
 import {IAddresses} from "./interfaces/IAddresses.sol";
 import {ICollateralManager} from "../contracts/interfaces/ICollateralManager.sol";
-import {WadRayMath} from "../libraries/math/WadRayMath.sol";
-import {PercentageMath} from "../libraries/math/PercentageMath.sol";
+// import {WadRayMath} from "../libraries/math/WadRayMath.sol";
+// import {PercentageMath} from "../libraries/math/PercentageMath.sol";
 
 contract DynamicInterestModel {
 
@@ -40,7 +40,7 @@ contract DynamicInterestModel {
         reserveFactor = _reserveFactor;
         liquidityCeiling = _liquidityCeiling; // e.g., 95% = 9500
         maxBorrowRate = _maxBorrowRate;
-        iCollateralManager = ICollateralManager(addressses.getAddress("CollateralManger"));
+        iCollateralManager = ICollateralManager(addresses.getAddress("CollateralManger"));
     }
 
     modifier onlyOwner() {
@@ -97,7 +97,7 @@ contract DynamicInterestModel {
     }
 
     function getCurrBorrowRate(uint256 totalBorrowed, uint256 totalSupplied) public view returns (uint256) {
-        return calculateBorrowerRate(totalBorrowed, totalSupplied, 0);
+        return calculateBorrowRate(totalBorrowed, totalSupplied, 0);
     }
 
     ////// **HELPER FUNCTIONS** ////////
@@ -120,7 +120,7 @@ contract DynamicInterestModel {
         uint256 totalSupplied,
         uint256 borrowRate
     ) public view returns (uint256) {
-            uint256 utilization = calcUtilizationRate(totalBorrowed, totalSupplied, 0, 0);
+            uint256 utilization = _calcUtilizationRate(totalBorrowed, totalSupplied, 0, 0);
             return borrowRate * utilization * (1e4 - reserveFactor) / 1e4;
     }
 
@@ -170,7 +170,7 @@ contract DynamicInterestModel {
         uint256 totalBorrowed,
         uint256 totalSupplied,
         uint256 liquidityTaken
-    ) external view returns (uint256)
+    ) public view returns (uint256)
     {
         require(totalSupplied > 0, "Total supplied must be greater than 0");
 
@@ -204,7 +204,7 @@ contract DynamicInterestModel {
      * @return True if the utilization is within the ceiling; otherwise, false.
      */
     function isBelowLiquidityCeiling(uint256 totalBorrowed, uint256 totalSupplied, uint256 liquidityTaken)
-        external
+        public
         view
         returns (bool)
     {
