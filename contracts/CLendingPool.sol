@@ -299,7 +299,8 @@ contract LendingPool is ReentrancyGuard {
         );
         // calculate interest as 10% of borrowed amount
         uint256 interestRate = iInterest.calculateBorrowRate(totalBorrowed, totalSupplied);
-        uint256 interest = (amount * interestRate) / 100; // 10% interest
+        uint256 percent = 10000;
+        uint256 interest = (amount * interestRate) / percent;
         uint256 newLoan = amount + interest;
         uint256 oldTotalDebt = totalBorrowedUsers[borrower];
         uint256 newTotalDebt = oldTotalDebt + newLoan;
@@ -471,7 +472,8 @@ contract LendingPool is ReentrancyGuard {
     }
 
     function updateBorrowersInterest() public {
-        uint256 interestRate = iInterest.calculateBorrowRate(totalBorrowed, totalSupplied);
+        uint256 interestRate = iInterest.getCurrBorrowRate(totalBorrowed, totalSupplied);
+        uint256 percent = 10000;
         for (uint256 i = 0; i < borrowers.length; i++) {
             address borrower = borrowers[i];
             InterestProfile storage iProfile = borrowersInterestProfiles[borrower];
@@ -481,7 +483,7 @@ contract LendingPool is ReentrancyGuard {
             if (iProfile.periodDuration + iProfile.lastUpdated <= timeNow) {
                 // Calculate interest as 2% of the total borrowed amount
                 uint256 borrowedAmount = totalBorrowedUsers[borrower];
-                uint256 interest = (borrowedAmount * iProfile.periodicalInterest) / 100;
+                uint256 interest = (borrowedAmount * interestRate) / percent;
                 // Update the borrowed amount by adding the calculated interest
                 totalBorrowedUsers[borrower] += interest;
                 totalBorrowed += interest;

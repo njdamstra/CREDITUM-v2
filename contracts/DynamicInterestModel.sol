@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 import {IAddresses} from "./interfaces/IAddresses.sol";
 import {ICollateralManager} from "../contracts/interfaces/ICollateralManager.sol";
+import "hardhat/console.sol";
 // import {WadRayMath} from "../libraries/math/WadRayMath.sol";
 // import {PercentageMath} from "../libraries/math/PercentageMath.sol";
 
@@ -33,14 +34,17 @@ contract DynamicInterestModel {
         uint256 _liquidityCeiling,
         uint256 _maxBorrowRate
     ) external onlyOwner {
+        console.log("Initializing DynamicInterestModel!");
+        console.log("setting initial baseRate to:", _baseRate);
         baseRate = _baseRate;
+        console.log("Initial baseRate:", baseRate);
         multiplierPreKink = _multiplierPreKink;
         multiplierPostKink = _multiplierPostKink;
         optimalUtilization = _optimalUtilization; // expressed as a percentage (e.g., 80% = 8000, assuming 2 decimals)
         reserveFactor = _reserveFactor;
         liquidityCeiling = _liquidityCeiling; // e.g., 95% = 9500
         maxBorrowRate = _maxBorrowRate;
-        iCollateralManager = ICollateralManager(addresses.getAddress("CollateralManger"));
+        iCollateralManager = ICollateralManager(addresses.getAddress("CollateralManager"));
     }
 
     modifier onlyOwner() {
@@ -83,8 +87,14 @@ contract DynamicInterestModel {
 
     /////// **VIEW FUNCTIONS** /////////
 
-    function getConstants() public view returns (uint256, uint256, uint256, uint256, uint256, uint256) {
-        return (baseRate, multiplierPreKink, multiplierPostKink, optimalUtilization, reserveFactor, liquidityCeiling);
+    function getBaseRate() public view returns (uint256) {
+        return baseRate;
+    }
+    function getConstants() public view returns (
+        uint256, uint256, uint256, uint256, uint256, uint256, uint256
+    ) {
+        console.log("in DIM's getConstants func where BR:", baseRate);
+        return (baseRate, multiplierPreKink, multiplierPostKink, optimalUtilization, reserveFactor, liquidityCeiling, maxBorrowRate);
     }
 
     function getCurrUtilization(uint256 totalBorrowed, uint256 totalSupplied) public view returns (uint256) {
@@ -97,7 +107,7 @@ contract DynamicInterestModel {
     }
 
     function getCurrBorrowRate(uint256 totalBorrowed, uint256 totalSupplied) public view returns (uint256) {
-        return calculateBorrowRate(totalBorrowed, totalSupplied, 0);
+        return calculateBorrowRate(totalBorrowed, totalSupplied);
     }
 
     ////// **HELPER FUNCTIONS** ////////
@@ -107,10 +117,11 @@ contract DynamicInterestModel {
         uint256 liquidityAdded,
         uint256 liquidityTaken
     ) public pure returns (uint256 utilizationRate) {
-        require(totalSupplied > 0, "Total supplied must be greater than 0");
-
+        utilizationRate = 0;
         // Calculate available liquidity after considering inflows and outflows
-
+        if (liquidityAdded + totalSupplied == 0) {
+            return utilizationRate;
+        }
         utilizationRate = ((totalBorrowed + liquidityTaken) * 1e4) / (liquidityAdded + totalSupplied); // Utilization ratio scaled by 1e4
         return utilizationRate;
     }
@@ -121,7 +132,7 @@ contract DynamicInterestModel {
         uint256 borrowRate
     ) public view returns (uint256) {
             uint256 utilization = _calcUtilizationRate(totalBorrowed, totalSupplied, 0, 0);
-            return borrowRate * utilization * (1e4 - reserveFactor) / 1e4;
+            return ((borrowRate * utilization) / 1e4) * (1e4 - reserveFactor) / 1e4;
     }
 
     /**
@@ -163,16 +174,40 @@ contract DynamicInterestModel {
      * @dev Calculates the current borrowing interest rate based on the utilization ratio.
      * @param totalBorrowed Total funds borrowed from the pool.
      * @param totalSupplied Total funds supplied to the pool.
-     * @param liquidityTaken Liquidity taken during the transaction without interest.
      * @return Borrowing interest rate (scaled by 1e4 for precision).
      */
     function calculateBorrowRate(
+        uint256 totalBorrowed,
+        uint256 totalSupplied
+    ) public view returns (uint256)
+    {
+
+        uint256 utilizationRate = _calcUtilizationRate(totalBorrowed, totalSupplied, 0, 0);
+        uint256 rawRate;
+
+        if (utilizationRate <= optimalUtilization) {
+            // Linear increase before kink
+            rawRate = _calcBelowKinkRate(utilizationRate);
+        } else {
+            // Sharp/steeper increase after kink
+            rawRate = _calcAboveKinkRate(utilizationRate);
+        }
+        return cappedBorrowRate(rawRate);
+    }
+
+    /**
+     * @dev Calculates the current borrowing interest rate based on the utilization ratio.
+     * @param totalBorrowed Total funds borrowed from the pool.
+     * @param totalSupplied Total funds supplied to the pool.
+     * @param liquidityTaken Liquidity taken during the transaction without interest.
+     * @return Borrowing interest rate (scaled by 1e4 for precision).
+     */
+    function calculateBorrowRateAfterBorrowed(
         uint256 totalBorrowed,
         uint256 totalSupplied,
         uint256 liquidityTaken
     ) public view returns (uint256)
     {
-        require(totalSupplied > 0, "Total supplied must be greater than 0");
 
         uint256 utilizationRate = _calcUtilizationRate(totalBorrowed, totalSupplied, 0, liquidityTaken);
         uint256 rawRate;
@@ -190,7 +225,7 @@ contract DynamicInterestModel {
     function calculateBorrowRateWithRisk(
         uint256 totalBorrowed, uint256 totalSupplied, uint256 liquidityTaken, address borrower
     ) public view returns (uint256) {
-        uint256 rawRate = calculateBorrowRate(totalBorrowed, totalSupplied, liquidityTaken);
+        uint256 rawRate = calculateBorrowRate(totalBorrowed, totalSupplied);
         uint256 riskWeight = iCollateralManager.getBorrowerRiskWeight(borrower);
         require(riskWeight > 0, "[*ERROR*] Invalid borrower risk weight");
         uint256 weightedRate = (rawRate * riskWeight) / 1e3; // Scale by 1e3 to apply weight
@@ -203,12 +238,12 @@ contract DynamicInterestModel {
      * @param totalSupplied Total funds supplied to the pool.
      * @return True if the utilization is within the ceiling; otherwise, false.
      */
-    function isBelowLiquidityCeiling(uint256 totalBorrowed, uint256 totalSupplied, uint256 liquidityTaken)
+    function isBelowLiquidityCeiling(uint256 totalBorrowed, uint256 totalSupplied)
         public
         view
         returns (bool)
     {
-        uint256 utilization = _calcUtilizationRate(totalBorrowed, totalSupplied, 0, liquidityTaken);
+        uint256 utilization = _calcUtilizationRate(totalBorrowed, totalSupplied, 0, 0);
         return utilization <= liquidityCeiling;
     }
 }

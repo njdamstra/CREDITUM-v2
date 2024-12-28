@@ -4,11 +4,12 @@ const { parseEther } = ethers;
 const { anyValue } = require("@nomicfoundation/hardhat-chai-matchers/withArgs");
 
 describe("UserPortal", function () {
-    let addresses, portal, lendingPool, collateralManager, nftTrader, nftValues, mockOracle, gNft, bNft;
-    let addressesAddr, portalAddr, lendingPoolAddr, collateralManagerAddr, nftTraderAddr, nftValuesAddr, mockOracleAddr, gNftAddr, bNftAddr;
+    let addresses, portal, lendingPool, collateralManager, nftTrader, nftValues, mockOracle, dim, gNft, bNft;
+    let addressesAddr, portalAddr, lendingPoolAddr, collateralManagerAddr, nftTraderAddr, nftValuesAddr, dimAddr, mockOracleAddr, gNftAddr, bNftAddr;
     let deployer, lender1, borrower1, borrower2, lender2, liquidator;
     let deployerAddr, lender1Addr, borrower1Addr, borrower2Addr, lender2Addr, liquidatorAddr;
     let useOnChainOracle = true;
+    let baseRate, multiplierPreKink, multiplierPostKink, optimalUtilization, reserveFactor, liquidityCeiling, maxBorrowRate;
     let gNftFP, bNftFP
 
     beforeEach(async function () {
@@ -50,6 +51,12 @@ describe("UserPortal", function () {
         mockOracle = await MockOracle.connect(deployer).deploy(addressesAddr);
         mockOracleAddr = await mockOracle.getAddress();
         console.log("MockOracle deployed at:", mockOracleAddr);
+
+        // Deploy DynamicInterestModel contract
+        const DynamicInterestModel = await ethers.getContractFactory("DynamicInterestModel");
+        dim = await DynamicInterestModel.connect(deployer).deploy(addressesAddr);
+        dimAddr = await dim.getAddress();
+        console.log("DynamicInterestModel deployed at:", dimAddr);
     
         // Deploy UserPortal
         const UserPortal = await ethers.getContractFactory("UserPortal");
@@ -89,6 +96,7 @@ describe("UserPortal", function () {
         await addresses.connect(deployer).setAddress("NftTrader", nftTraderAddr);
         await addresses.connect(deployer).setAddress("LendingPool", lendingPoolAddr);
         await addresses.connect(deployer).setAddress("UserPortal", portalAddr);
+        await addresses.connect(deployer).setAddress("DynamicInterestModel", dimAddr);
         await addresses.connect(deployer).setAddress("MockOracle", mockOracleAddr);
         await addresses.connect(deployer).setAddress("deployer", deployer.address);
     
@@ -101,6 +109,16 @@ describe("UserPortal", function () {
     
         // Initialize CollateralManager
         await collateralManager.connect(deployer).initialize();
+
+        // Initialize DynamicInterestModel
+        baseRate = 500;
+        multiplierPreKink = 500;
+        multiplierPostKink = 2000;
+        optimalUtilization = 8000;
+        reserveFactor = 1000;
+        liquidityCeiling = 9500;
+        maxBorrowRate = 5000;
+        await dim.connect(deployer).initialize(baseRate, multiplierPreKink, multiplierPostKink, optimalUtilization, reserveFactor, liquidityCeiling, maxBorrowRate);
     
         // Initialize NftTrader
         await nftTrader.connect(deployer).initialize();

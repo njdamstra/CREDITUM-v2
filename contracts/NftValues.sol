@@ -171,7 +171,7 @@ contract NftValues {
 
     function getNftPrice(address collection, uint256 tokenId) public view returns (uint256) {
         uint256 price = getNft(collection, tokenId).price;
-        console.log("getNftPrice called!", price);
+        // console.log("getNftPrice called!", price);
         return price;
     }
 
@@ -191,10 +191,10 @@ contract NftValues {
     //// NFT ORACLE ///////
 
     function updateNft(address collectionAddr, uint256 tokenId, uint256 price) external {
-        console.log("NftValues updateNft function called with price:", price);
+        // console.log("NftValues updateNft function called with price:", price);
         // require(msg.sender == owner || msg.sender == onChainOracle, "Don't have access rights to update Collection");
         require(collectionAddr != address(0), "Invalid collection address");
-        console.log("nftIndex:", nftIndex[collectionAddr][tokenId]);
+        // console.log("nftIndex:", nftIndex[collectionAddr][tokenId]);
         Nft storage nft = nftList[nftIndex[collectionAddr][tokenId]];
         if (nft.collection == collectionAddr && nft.tokenId == tokenId) {
             nft.pending = false;
